@@ -15,5 +15,5 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 //@ActiveProfiles("dev-file")
 @ActiveProfiles("prod")
-public abstract class integrationTestBase {
+public abstract class IntegrationTestBase {
 }

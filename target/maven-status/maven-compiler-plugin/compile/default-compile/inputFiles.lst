@@ -2,12 +2,14 @@
 /home/denis/git/JetBrains/IdeaProjects/java_springBoot/src/main/java/com/dma/springboot/projection/EmployeeNativeView.java
 /home/denis/git/JetBrains/IdeaProjects/java_springBoot/src/main/java/com/dma/springboot/config/DatabaseConfig.java
 /home/denis/git/JetBrains/IdeaProjects/java_springBoot/src/main/java/com/dma/springboot/config/ApplicationConfiguration.java
+/home/denis/git/JetBrains/IdeaProjects/java_springBoot/src/main/java/com/dma/springboot/dto/EmployeeFilter.java
 /home/denis/git/JetBrains/IdeaProjects/java_springBoot/target/generated-sources/java/com/dma/springboot/entity/QEmployeeEntity.java
 /home/denis/git/JetBrains/IdeaProjects/java_springBoot/src/main/java/com/dma/springboot/conditional/service/GreetingService.java
 /home/denis/git/JetBrains/IdeaProjects/java_springBoot/src/main/java/com/dma/springboot/config/DataDirectoryConfig.java
 /home/denis/git/JetBrains/IdeaProjects/java_springBoot/src/main/java/com/dma/springboot/repository/EmployeeRepositoryImpl.java
 /home/denis/git/JetBrains/IdeaProjects/java_springBoot/src/main/java/com/dma/springboot/entity/EmployeeEntity.java
 /home/denis/git/JetBrains/IdeaProjects/java_springBoot/src/main/java/com/dma/springboot/repository/EmployeeRepository.java
+/home/denis/git/JetBrains/IdeaProjects/java_springBoot/src/main/java/com/dma/springboot/util/QPredicate.java
 /home/denis/git/JetBrains/IdeaProjects/java_springBoot/src/main/java/com/dma/springboot/SpringBootTestApplication.java
 /home/denis/git/JetBrains/IdeaProjects/java_springBoot/src/main/java/com/dma/springboot/projection/EmployeeNameView.java
 /home/denis/git/JetBrains/IdeaProjects/java_springBoot/target/generated-sources/java/com/dma/springboot/entity/QCompanyEntity.java

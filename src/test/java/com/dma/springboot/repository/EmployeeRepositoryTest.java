@@ -1,9 +1,12 @@
 package com.dma.springboot.repository;
 
+import com.dma.springboot.IntegrationTestBase;
+import com.dma.springboot.dto.EmployeeFilter;
 import com.dma.springboot.entity.EmployeeEntity;
-import com.dma.springboot.integrationTestBase;
 import com.dma.springboot.projection.EmployeeNameView;
 import com.dma.springboot.projection.EmployeeNativeView;
+import com.dma.springboot.util.QPredicate;
+import com.querydsl.core.types.Predicate;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -11,16 +14,20 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
+import static com.dma.springboot.entity.QEmployeeEntity.employeeEntity;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.hamcrest.Matchers.*;
 
 
 @Slf4j
-class EmployeeRepositoryTest extends integrationTestBase {
+class EmployeeRepositoryTest extends IntegrationTestBase {
 
     private static final Integer IVAN_ID = 1;
 
@@ -206,4 +213,91 @@ class EmployeeRepositoryTest extends integrationTestBase {
             );
         });
     }
+
+
+    @Test
+    void testFindByFilter() {
+
+        EmployeeFilter filter = EmployeeFilter.builder()
+                .firstName("ivan")
+                .build();
+        List<EmployeeEntity> employees = employeeRepository.findByFilter(filter);
+
+        assertEquals(1, employees.size());
+
+        employees.stream()
+                .findFirst()
+                .ifPresentOrElse(
+                        employee -> log.info("Найден сотрудник: {}", employee),
+                        () -> log.warn("Сотрудник не найден, хотя ожидался")
+                );
+
+        for (EmployeeEntity employee : employees) {
+            log.info("Найден сотрудник: {}", employee);
+            // Здесь можно добавить дополнительные проверки для каждого
+            assertThat(employee.getFirstName()).containsIgnoringCase("ivan");
+        }
+    }
+
+    @Test
+    void testQPredicates() {
+        // Given - используем реальные значения из БД
+        EmployeeFilter filter = EmployeeFilter.builder()
+                .firstName("ivan")
+                .salary(50)  // Ищем зарплату >= 50 (в БД salary = 100)
+                .build();
+
+        log.info("=".repeat(60));
+        log.info("🔍 Поиск по фильтру:");
+        log.info("   firstName: '{}' (поиск по вхождению, без учета регистра)", filter.getFirstName());
+        log.info("   salary >= {}", filter.getSalary());
+        log.info("=".repeat(60));
+
+        // When
+        Predicate predicate = QPredicate.builder()
+                .add(filter.getFirstName(), employeeEntity.firstName::containsIgnoreCase)
+                .add(filter.getSalary(), employeeEntity.salary::goe)
+                .buildAnd();
+
+        Iterable<EmployeeEntity> result = employeeRepository.findAll(predicate);
+        List<EmployeeEntity> employees = new ArrayList<>();
+        result.forEach(employees::add);
+
+        // Then
+        assertThat(employees)
+                .as("Должен найти сотрудника Ivan с зарплатой >= %d", filter.getSalary())
+                .isNotEmpty();
+
+        log.info("✅ Найдено сотрудников: {}", employees.size());
+
+        employees.forEach(emp -> {
+            log.info("   → id={}: {} {}, зарплата={}, компания={}",
+                    emp.getId(),
+                    emp.getFirstName(),
+                    emp.getLastName(),
+                    emp.getSalary(),
+                    emp.getCompany() != null ? emp.getCompany().getName() : "—");
+
+            // Проверяем каждого сотрудника
+            assertThat(emp.getFirstName())
+                    .as("Имя должно содержать 'ivan' (без учета регистра)")
+                    .containsIgnoringCase("ivan");
+
+            assertThat(emp.getSalary())
+                    .as("Зарплата должна быть >= %d", filter.getSalary())
+                    .isGreaterThanOrEqualTo(filter.getSalary());
+        });
+
+        log.info("=".repeat(60));
+    }
+
+    private String formatEmployee(EmployeeEntity emp) {
+        return String.format("%s %s (з/п: %d, компания: %s)",
+                emp.getFirstName(),
+                emp.getLastName(),
+                emp.getSalary(),
+                emp.getCompany() != null ? emp.getCompany().getName() : "—"
+        );
+    }
+
 }

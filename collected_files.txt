@@ -1,0 +1,1254 @@
+
+================================================================================
+ФАЙЛ 1: pom.xml
+================================================================================
+
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+         http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.dma</groupId>
+    <artifactId>spring_boot_test</artifactId>
+    <version>1.0-SNAPSHOT</version>
+
+    <properties>
+        <java.version>11</java.version>
+        <maven.compiler.release>${java.version}</maven.compiler.release>
+        <spring-boot.version>2.7.18</spring-boot.version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <lombok.version>1.18.30</lombok.version>
+        <querydsl.version>5.0.0</querydsl.version>
+        <h2.version>2.2.224</h2.version>
+
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-dependencies</artifactId>
+                <version>${spring-boot.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter</artifactId>
+        </dependency>
+
+        <!-- spring-boot-starter уже включен в spring-boot-starter-web -->
+        <!--        <dependency>-->
+        <!--            <groupId>org.springframework.boot</groupId>-->
+        <!--            <artifactId>spring-boot-starter-web</artifactId>-->
+        <!--        </dependency>-->
+
+        <!--        <dependency>-->
+        <!--            <groupId>org.springframework.boot</groupId>-->
+        <!--            <artifactId>spring-boot-starter-actuator</artifactId>-->
+        <!--        </dependency>-->
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Lombok -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>${lombok.version}</version>
+            <scope>provided</scope>
+            <optional>true</optional>
+        </dependency>
+
+        <!-- H2 Database -->
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <version>${h2.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!-- PostgreSQL -->
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>42.7.4</version>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!-- QueryDSL -->
+        <dependency>
+            <groupId>com.querydsl</groupId>
+            <artifactId>querydsl-jpa</artifactId>
+            <version>${querydsl.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.querydsl</groupId>
+            <artifactId>querydsl-apt</artifactId>
+            <version>${querydsl.version}</version>
+            <scope>provided</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!-- Компилятор Java -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.11.0</version>
+                <configuration>
+                    <source>${java.version}</source>
+                    <target>${java.version}</target>
+<!--                    <release>${java.version}</release> &lt;!&ndash; Вместо source и target &ndash;&gt;-->
+                    <encoding>${project.build.sourceEncoding}</encoding>
+                    <compilerArgs>
+                        <arg>--add-modules</arg>
+                        <arg>java.sql</arg>
+                    </compilerArgs>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                            <version>${lombok.version}</version>
+                        </path>
+                    </annotationProcessorPaths>
+                </configuration>
+            </plugin>
+
+            <!-- Spring Boot плагин -->
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <version>${spring-boot.version}</version>
+                <configuration>
+                    <mainClass>com.dma.springboot.SpringBootTestApplication</mainClass>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>repackage</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- QueryDSL плагин (исправленная конфигурация) -->
+            <plugin>
+                <groupId>com.mysema.maven</groupId>
+                <artifactId>apt-maven-plugin</artifactId>
+                <version>1.1.3</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>process</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>target/generated-sources/java</outputDirectory>
+                            <processor>com.querydsl.apt.jpa.JPAAnnotationProcessor</processor>
+                        </configuration>
+                    </execution>
+                </executions>
+                <dependencies>
+                    <dependency>
+                        <groupId>com.querydsl</groupId>
+                        <artifactId>querydsl-apt</artifactId>
+                        <version>${querydsl.version}</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>javax.persistence</groupId>
+                        <artifactId>javax.persistence-api</artifactId>
+                        <version>2.2</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+
+            <!-- Добавляем сгенерированные источники -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>3.5.0</version>
+                <executions>
+                    <execution>
+                        <id>add-source</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>add-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>target/generated-sources/java</source>
+                            </sources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>
+
+================================================================================
+ФАЙЛ 2: src/test/resources/application-test.properties
+================================================================================
+
+# H2 Database Configuration for test profile (???????? in-memory)
+spring.datasource.url=jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;MODE=PostgreSQL
+spring.datasource.driver-class-name=org.h2.Driver
+spring.datasource.username=sa
+spring.datasource.password=
+
+# JPA Configuration
+spring.jpa.database-platform=org.hibernate.dialect.H2Dialect
+spring.jpa.hibernate.ddl-auto=create-drop
+spring.jpa.show-sql=false
+spring.jpa.properties.hibernate.format_sql=false
+
+# Application Properties
+app.service.greeting.message=Hello
+
+================================================================================
+ФАЙЛ 3: src/test/resources/sql/data-test.sql
+================================================================================
+
+DELETE FROM employee;
+DELETE FROM company;
+
+INSERT INTO company(id, name) VALUES (1, 'Apple');
+INSERT INTO company(id, name) VALUES (2, 'Google');
+
+INSERT INTO employee(id, first_name, last_name, birth_date, salary, company_id)
+VALUES (1, 'Ivan', 'Ivanov', '1990-01-01', 100000, 1);
+INSERT INTO employee(id, first_name, last_name, birth_date, salary, company_id)
+VALUES (2, 'Petr', 'Petrov', '1991-02-02', 120000, 2);
+
+================================================================================
+ФАЙЛ 4: src/test/java/com/dma/springboot/IntegrationTestBase.java
+================================================================================
+
+package com.dma.springboot;
+
+import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
+
+//import javax.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
+
+//@ActiveProfiles("dev-file")
+@Slf4j
+@SpringBootTest
+@Transactional
+//@ActiveProfiles("dev-file")
+@ActiveProfiles("prod")
+public abstract class IntegrationTestBase {
+}
+
+================================================================================
+ФАЙЛ 5: src/test/java/com/dma/springboot/conditional/service/GreetingServiceTest.java
+================================================================================
+
+package com.dma.springboot.conditional.service;
+
+import lombok.extern.slf4j.Slf4j;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+@SpringBootTest
+@Slf4j
+@ActiveProfiles("test")
+class GreetingServiceTest {
+
+    @Autowired
+    private GreetingService greetingService;
+
+    @org.junit.jupiter.api.BeforeEach
+    void setUp() {
+    }
+
+    @org.junit.jupiter.api.AfterEach
+    void tearDown() {
+    }
+
+    @Test
+    void testGreeting(){
+        String expectedMessage = "Hello";
+        log.warn("greeting: " + greetingService.greeting());
+        assertEquals(expectedMessage, greetingService.greeting());
+    }
+}
+
+================================================================================
+ФАЙЛ 6: src/test/java/com/dma/springboot/repository/CompanyRepositoryTest.java
+================================================================================
+
+package com.dma.springboot.repository;
+
+import com.dma.springboot.entity.CompanyEntity;
+import lombok.extern.slf4j.Slf4j;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
+
+import javax.transaction.Transactional;
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+//@ActiveProfiles("test")
+//@ActiveProfiles("dev-file")
+@ActiveProfiles("prod")
+@Slf4j
+@SpringBootTest
+@Transactional
+class CompanyRepositoryTest {
+
+    @Autowired
+    private CompanyRepository companyRepository;
+
+    private static final Integer APPLE_ID = 1;
+    private static final Integer GOOGLE_ID = 2;
+
+    @BeforeEach
+    void setUp() {
+        // Данные уже загружены из data.sql
+    }
+
+    @AfterEach
+    void tearDown() {
+    }
+
+    @Test
+    void testGetById() {
+        Optional<CompanyEntity> company = companyRepository.findById(APPLE_ID);
+        assertTrue(company.isPresent());
+
+        company.ifPresent(entity ->
+                {
+                    assertEquals("Apple", entity.getName());
+                }
+        );
+    }
+
+    @Test
+    void testSave() {
+        CompanyEntity company = CompanyEntity.builder()
+                .name("fitBit")
+                .build();
+        companyRepository.save(company);
+        assertNotNull(company.getId());
+    }
+
+    @Test
+    void testCount() {
+        long count = companyRepository.count();
+        assertEquals(2, count); // Apple и Google из data.sql
+    }
+}
+
+================================================================================
+ФАЙЛ 7: src/test/java/com/dma/springboot/repository/EmployeeRepositoryTest.java
+================================================================================
+
+package com.dma.springboot.repository;
+
+import com.dma.springboot.IntegrationTestBase;
+import com.dma.springboot.dto.EmployeeFilter;
+import com.dma.springboot.entity.EmployeeEntity;
+import com.dma.springboot.projection.EmployeeNameView;
+import com.dma.springboot.projection.EmployeeNativeView;
+import com.dma.springboot.util.QPredicate;
+import com.querydsl.core.types.Predicate;
+import lombok.extern.slf4j.Slf4j;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.hamcrest.MatcherAssert;
+import org.hamcrest.Matchers;
+
+import java.util.List;
+import java.util.Optional;
+
+import static com.dma.springboot.entity.QEmployeeEntity.employeeEntity;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.hamcrest.Matchers.*;
+
+
+@Slf4j
+class EmployeeRepositoryTest extends IntegrationTestBase {
+
+    private static final Integer IVAN_ID = 1;
+
+    @Autowired
+    private EmployeeRepository employeeRepository;
+
+    @Test
+    void fiendById(){
+        Optional<EmployeeEntity> employee = employeeRepository.findById(IVAN_ID);
+        Assertions.assertTrue(employee.isPresent());
+    }
+
+    @Test
+    void findByFirstNameContainingTest1() {
+        Optional<EmployeeEntity> employee = employeeRepository.findByFirstNameContaining("va");
+
+        // AssertJ стиль
+        assertThat(employee).isPresent();
+
+        employee.ifPresent(emp -> {
+            log.warn("Found employee: {}", emp);
+        });
+    }
+
+    @Test
+    void findByFirstNameContainingTest2() {
+        Optional<EmployeeEntity> employee = employeeRepository.findByFirstNameContaining("va");
+
+        // AssertJ стиль
+        assertThat(employee).isPresent();
+
+        employee.ifPresent(emp -> {
+            assertThat(emp.getFirstName()).containsIgnoringCase("va");
+            log.warn("Found employee: {}", emp);
+        });
+    }
+
+    @Test
+    void findByQuery() {
+        Optional<EmployeeEntity> employee = employeeRepository.findByFirstNameContaining("va");
+
+        assertThat(employee).isPresent();
+
+        employee.ifPresent(emp -> {
+            assertThat(emp.getFirstName()).containsIgnoringCase("va");
+            log.warn("Found employee: {}", emp);
+        });
+    }
+
+    @Test
+    void findByQuery2() {
+        Optional<EmployeeEntity> employee = employeeRepository.findByQuery("Ivan");
+
+        assertThat(employee).isPresent();
+
+        employee.ifPresent(emp -> {
+            log.warn("Found employee: {}", emp);
+        });
+    }
+
+    @Test
+    void findByQueryParam() {
+        Optional<EmployeeEntity> employee = employeeRepository.findByQueryParm("Ivan");
+
+        assertThat(employee).isPresent();
+
+        employee.ifPresent(emp -> {
+            log.warn("Found employee: {}", emp);
+        });
+    }
+
+    @Test
+    void findByNativeQuery() {
+        Optional<EmployeeEntity> employee = employeeRepository.findByNativeQuery("Ivan");
+
+        assertThat(employee).isPresent();
+
+        employee.ifPresent(emp -> {
+            log.warn("Found employee: {}", emp);
+        });
+    }
+
+    @Test
+    void findProjectionBySalaryGreaterThan() {
+        List<EmployeeNameView> employees = employeeRepository.findBySalaryGreaterThan(100);
+
+        // ============ ASSERTJ СТИЛЬ ============
+        assertThat(employees)
+                .isNotEmpty()
+                .hasSize(2);
+
+        // Проверка содержимого через AssertJ
+        assertThat(employees)
+                .extracting(EmployeeNameView::getFirstName)
+                .contains("Ivan", "Petr");
+
+        // Проверка каждого элемента через AssertJ
+        employees.forEach(emp -> {
+            assertThat(emp.getFirstName()).isNotNull();
+            assertThat(emp.getLastName()).isNotNull();
+            assertThat(emp.getFullName()).isNotBlank();
+            log.warn("Employee projection: {} {}", emp.getFirstName(), emp.getLastName());
+        });
+
+        // Фильтрация через AssertJ
+        assertThat(employees)
+                .filteredOn(emp -> emp.getFirstName().equals("Ivan"))
+                .hasSize(1);
+
+        // ============ HAMCREST СТИЛЬ (через MatcherAssert) ============
+        MatcherAssert.assertThat(employees, hasSize(2));
+        MatcherAssert.assertThat(employees, not(empty()));
+
+        // Проверка содержимого через Hamcrest
+        MatcherAssert.assertThat(employees,
+                Matchers.<EmployeeNameView>hasItems(
+                        Matchers.hasProperty("firstName", is("Ivan")),
+                        Matchers.hasProperty("firstName", is("Petr"))
+                ));
+
+        // ============ JUNIT ASSERTIONS ============
+        assertEquals(2, employees.size());
+        assertFalse(employees.isEmpty());
+    }
+
+    @Test
+    void findProjectionBySalaryGreaterThanNative() {
+        List<EmployeeNativeView> employees = employeeRepository.findBySalaryGreaterThanNative(100);
+
+        // AssertJ стиль
+        assertThat(employees).hasSize(2);
+
+        // Hamcrest стиль
+        MatcherAssert.assertThat(employees, hasSize(2));
+
+        // Проверка через Hamcrest
+        employees.forEach(emp -> {
+            MatcherAssert.assertThat(emp.getFirstName(), notNullValue());
+            MatcherAssert.assertThat(emp.getLastName(), notNullValue());
+        });
+    }
+
+    @Test
+    void testFindCustomQuery() {
+        List<EmployeeEntity> customQuery = employeeRepository.findCustomQuery();
+
+        // AssertJ стиль
+        assertThat(customQuery).isEmpty();
+
+        // Hamcrest стиль
+        MatcherAssert.assertThat(customQuery, empty());
+
+        // JUnit стиль
+        assertTrue(customQuery.isEmpty());
+        assertEquals(0, customQuery.size());
+    }
+
+    @Test
+    void testFindByMultipleConditions() {
+        // Пример комбинированного использования
+        Optional<EmployeeEntity> employee = employeeRepository.findByFirstNameAndLastName("Ivan", "Ivanov");
+
+        // AssertJ
+        assertThat(employee).isPresent();
+
+        // Hamcrest
+        MatcherAssert.assertThat(employee.isPresent(), is(true));
+
+        employee.ifPresent(emp -> {
+            // AssertJ
+            assertThat(emp.getFirstName()).isEqualTo("Ivan");
+            assertThat(emp.getLastName()).isEqualTo("Ivanov");
+
+            // Hamcrest
+            MatcherAssert.assertThat(emp.getFirstName(), is("Ivan"));
+            MatcherAssert.assertThat(emp.getLastName(), is("Ivanov"));
+
+            // Комбинированная проверка
+            assertAll(
+                    () -> assertEquals("Ivan", emp.getFirstName()),
+                    () -> MatcherAssert.assertThat(emp.getLastName(), is("Ivanov")),
+                    () -> assertThat(emp.getSalary()).isPositive()
+            );
+        });
+    }
+
+
+    @Test
+    void testFindByFilter() {
+
+        EmployeeFilter filter = EmployeeFilter.builder()
+                .firstName("ivan")
+                .build();
+        List<EmployeeEntity> employees = employeeRepository.findByFilter(filter);
+
+        assertEquals(1, employees.size());
+
+        employees.stream()
+                .findFirst()
+                .ifPresentOrElse(
+                        employee -> log.info("Найден сотрудник: {}", employee),
+                        () -> log.warn("Сотрудник не найден, хотя ожидался")
+                );
+
+        for (EmployeeEntity employee : employees) {
+            log.info("Найден сотрудник: {}", employee);
+            // Здесь можно добавить дополнительные проверки для каждого
+            assertThat(employee.getFirstName()).containsIgnoringCase("ivan");
+        }
+    }
+
+    @Test
+    void testQPredicates() {
+        // Given
+        EmployeeFilter filter = EmployeeFilter.builder()
+                .firstName("ivan")
+                .build();
+
+        // When - используем QueryDSL Predicate
+        Predicate predicate = QPredicate.builder()
+                .add(filter.getFirstName(), employeeEntity.firstName::containsIgnoreCase)
+                .add(filter.getLastName(), employeeEntity.lastName::containsIgnoreCase)
+                .add(filter.getSalary(), s -> employeeEntity.salary.goe(100))
+                .buildAnd();
+
+        Iterable<EmployeeEntity> result = employeeRepository.findAll(predicate);
+        List<EmployeeEntity> employees = (List<EmployeeEntity>) result;
+
+        // Then
+        assertThat(employees)
+                .as("Поиск по фильтру: %s", filter)
+                .isNotEmpty();
+
+        // Логируем результаты
+        log.info("Найдено сотрудников: {}", employees.size());
+        employees.forEach(emp ->
+                log.info("  → {}", formatEmployee(emp))
+        );
+    }
+
+    private String formatEmployee(EmployeeEntity emp) {
+        return String.format("%s %s (з/п: %d, компания: %s)",
+                emp.getFirstName(),
+                emp.getLastName(),
+                emp.getSalary(),
+                emp.getCompany() != null ? emp.getCompany().getName() : "—"
+        );
+    }
+
+}
+
+================================================================================
+ФАЙЛ 8: src/main/resources/application-dev-file.properties
+================================================================================
+
+# H2 File Database
+spring.datasource.url=jdbc:h2:file:./data/devdb;DB_CLOSE_DELAY=-1
+spring.datasource.driver-class-name=org.h2.Driver
+spring.datasource.username=sa
+spring.datasource.password=123
+
+# H2 Console
+spring.h2.console.enabled=true
+spring.h2.console.path=/h2-console
+
+# JPA - ?????: update ????????? ??????
+spring.jpa.database-platform=org.hibernate.dialect.H2Dialect
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.format_sql=true
+
+# SQL Initialization - ?????? ???? ????????
+spring.sql.init.mode=always
+spring.sql.init.schema-locations=classpath:sql/init.sql
+spring.sql.init.data-locations=classpath:sql/data.sql
+
+# Application Properties
+app.service.greeting.message=Hello from Dev File H2
+
+================================================================================
+ФАЙЛ 9: src/main/resources/application-dev.properties
+================================================================================
+
+# Server Configuration
+server.port=8090
+
+# H2 Database Configuration for dev profile
+spring.datasource.url=jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+spring.datasource.driver-class-name=org.h2.Driver
+spring.datasource.username=sa
+spring.datasource.password=
+
+# H2 Console Configuration
+spring.h2.console.enabled=true
+spring.h2.console.path=/h2-console
+
+# JPA Configuration
+spring.jpa.database-platform=org.hibernate.dialect.H2Dialect
+spring.jpa.hibernate.ddl-auto=create-drop
+spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.format_sql=true
+
+# Application Properties
+app.service.greeting.message=Hello from Dev H2
+
+================================================================================
+ФАЙЛ 10: src/main/resources/application.properties
+================================================================================
+
+# Default profile
+spring.profiles.active=dev-file
+
+# Common settings
+server.port=8090
+logging.level.org.springframework=INFO
+logging.level.com.dma.springboot=DEBUG
+logging.pattern.console=%d{yyyy-MM-dd HH:mm:ss} - %msg%n
+
+================================================================================
+ФАЙЛ 11: src/main/resources/application-prod.properties
+================================================================================
+
+# Server Configuration
+server.port=8080
+
+# PostgreSQL Database Configuration for prod profile
+spring.datasource.url=jdbc:postgresql://localhost:5433/task_manager_alpine
+spring.datasource.username=alpine_user
+spring.datasource.password=alpine_user_pass
+spring.datasource.driver-class-name=org.postgresql.Driver
+
+# JPA Configuration
+spring.jpa.database-platform=org.hibernate.dialect.PostgreSQLDialect
+spring.jpa.hibernate.ddl-auto=none
+spring.jpa.show-sql=false
+spring.jpa.properties.hibernate.format_sql=false
+
+# Application Properties
+app.service.greeting.message=Hello from Prod PostgreSQL
+
+
+# Logging Configuration - ?????? ???????????
+logging.level.root=INFO
+logging.level.com.dma.springboot=DEBUG
+logging.level.org.springframework=INFO
+logging.level.org.hibernate.SQL=DEBUG
+logging.level.org.hibernate.type.descriptor.sql.BasicBinder=TRACE
+
+# Logging Pattern
+logging.pattern.console=%d{yyyy-MM-dd HH:mm:ss} - %-5level - %logger{36} - %msg%n
+logging.pattern.file=%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n
+
+# File Logging (???????????)
+logging.file.name=logs/application-prod.log
+logging.file.max-size=10MB
+logging.file.max-history=10
+
+================================================================================
+ФАЙЛ 12: src/main/resources/sql/init.sql
+================================================================================
+
+CREATE TABLE IF NOT EXISTS company(
+                                      id SERIAL PRIMARY KEY,
+                                      name VARCHAR(128) NOT NULL UNIQUE
+    );
+
+CREATE TABLE IF NOT EXISTS employee(
+                                       id SERIAL PRIMARY KEY,
+                                       first_name VARCHAR(128) NOT NULL,
+    last_name VARCHAR(128) NOT NULL,
+    birth_date DATE,
+    salary INTEGER NOT NULL,
+    company_id INTEGER REFERENCES company(id)
+    );
+
+================================================================================
+ФАЙЛ 13: src/main/resources/sql/data.sql
+================================================================================
+
+DELETE FROM employee;
+DELETE FROM company;
+
+-- Тестовые данные для H2
+INSERT INTO company(id, name) VALUES (1, 'Apple');
+INSERT INTO company(id, name) VALUES (2, 'Google');
+
+INSERT INTO employee(id, first_name, last_name, birth_date, salary, company_id)
+VALUES (1, 'Ivan', 'Ivanov', '1990-01-01', 100000, 1);
+INSERT INTO employee(id, first_name, last_name, birth_date, salary, company_id)
+VALUES (2, 'Petr', 'Petrov', '1991-02-02', 120000, 2);
+
+================================================================================
+ФАЙЛ 14: src/main/java/com/dma/springboot/SpringBootTestApplication.java
+================================================================================
+
+package com.dma.springboot;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class SpringBootTestApplication {
+
+    public static void main(String[] args) {
+        SpringApplication.run(SpringBootTestApplication.class, args);
+    }
+
+}
+
+================================================================================
+ФАЙЛ 15: src/main/java/com/dma/springboot/util/QPredicate.java
+================================================================================
+
+package com.dma.springboot.util;
+
+import com.querydsl.core.types.ExpressionUtils;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Function;
+
+import com.querydsl.core.types.Predicate;
+import org.springframework.core.NestedExceptionUtils;
+
+
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
+public class QPredicate {
+
+    private List<Predicate> predicates = new ArrayList<>();
+
+    public <T> QPredicate add(T object, Function<T, Predicate> function){
+        if (object != null){
+          predicates.add(function.apply(object));
+        }
+        return this;
+    };
+
+    public Predicate buildAnd(Predicate... predicates){
+        return ExpressionUtils.allOf(predicates);
+    }
+
+    public Predicate buildOr(Predicate... predicates){
+        return ExpressionUtils.anyOf(predicates);
+    }
+
+
+    public static QPredicate builder(){
+        return new QPredicate();
+    }
+}
+
+================================================================================
+ФАЙЛ 16: src/main/java/com/dma/springboot/dto/EmployeeFilter.java
+================================================================================
+
+package com.dma.springboot.dto;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class EmployeeFilter {
+
+    private String firstName;
+    private String lastName;
+    private Integer salary;
+
+}
+
+================================================================================
+ФАЙЛ 17: src/main/java/com/dma/springboot/conditional/FirstConditional.java
+================================================================================
+
+package com.dma.springboot.conditional;
+
+import org.springframework.context.annotation.Condition;
+import org.springframework.context.annotation.ConditionContext;
+import org.springframework.core.type.AnnotatedTypeMetadata;
+
+public class FirstConditional implements Condition {
+    @Override
+    public boolean matches(ConditionContext context, AnnotatedTypeMetadata metadata) {
+        return true;
+    }
+}
+
+================================================================================
+ФАЙЛ 18: src/main/java/com/dma/springboot/conditional/service/GreetingService.java
+================================================================================
+
+package com.dma.springboot.conditional.service;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
+@Service
+public class GreetingService {
+
+    @Value("${app.service.greeting.message}")
+    private String greeting;
+
+    public String greeting(){
+        return greeting;
+    }
+
+}
+
+================================================================================
+ФАЙЛ 19: src/main/java/com/dma/springboot/entity/EmployeeEntity.java
+================================================================================
+
+package com.dma.springboot.entity;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import javax.persistence.*;
+import java.time.LocalDate;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@Entity
+@Table(name = "employee")
+public class EmployeeEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
+
+    private String firstName;
+
+    private String lastName;
+
+    @Column(name = "birth_date")
+    private LocalDate birthDay;
+
+    private Integer salary;
+
+    @ManyToOne
+    @JoinColumn(name = "company_id")
+    private CompanyEntity company;
+
+}
+
+================================================================================
+ФАЙЛ 20: src/main/java/com/dma/springboot/entity/CompanyEntity.java
+================================================================================
+
+package com.dma.springboot.entity;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import javax.persistence.*;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@Entity
+@Table(name = "company")
+public class CompanyEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
+    private Integer id;
+    @Column(name = "name")
+    private String name;
+}
+
+================================================================================
+ФАЙЛ 21: src/main/java/com/dma/springboot/projection/EmployeeNameView.java
+================================================================================
+
+package com.dma.springboot.projection;
+
+import org.springframework.beans.factory.annotation.Value;
+
+public interface EmployeeNameView {
+
+    String getFirstName();
+
+    String getLastName();
+
+    @Value("#{target.firstName + ' ' + target.lastName}")
+    String getFullName();
+
+//    Что делает default?
+//    Раньше (до Java 8):
+//    В интерфейсах можно было только объявлять методы без реализации
+//    Все методы были public abstract по умолчанию
+//    При добавлении нового метода в интерфейс, все классы, реализующие этот интерфейс, ломались
+//    Сейчас (Java 8+):
+//    default методы позволяют добавить реализацию прямо в интерфейс
+//    Классы, реализующие интерфейс, автоматически получают эту реализацию
+//    Можно не переопределять default метод (но можно, если нужно)
+
+//    default String getFullName() {
+//        return getFirstName() + " " + getLastName();
+//    }
+}
+
+================================================================================
+ФАЙЛ 22: src/main/java/com/dma/springboot/projection/EmployeeNativeView.java
+================================================================================
+
+package com.dma.springboot.projection;
+
+public interface EmployeeNativeView {
+
+    Integer getUserId();
+
+    String getFirstName();
+
+    String getLastName();
+
+    String getFullName();
+
+}
+
+================================================================================
+ФАЙЛ 23: src/main/java/com/dma/springboot/repository/CompanyRepository.java
+================================================================================
+
+package com.dma.springboot.repository;
+
+import com.dma.springboot.entity.CompanyEntity;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+@Repository
+public interface CompanyRepository extends JpaRepository<CompanyEntity, Integer> {
+
+}
+
+================================================================================
+ФАЙЛ 24: src/main/java/com/dma/springboot/repository/EmployeeCustomRepository.java
+================================================================================
+
+package com.dma.springboot.repository;
+
+import com.dma.springboot.dto.EmployeeFilter;
+import com.dma.springboot.entity.EmployeeEntity;
+
+import java.util.List;
+
+public interface EmployeeCustomRepository {
+
+    List<EmployeeEntity> findCustomQuery();
+
+    List<EmployeeEntity> findByFilter(EmployeeFilter filter);
+
+}
+
+================================================================================
+ФАЙЛ 25: src/main/java/com/dma/springboot/repository/EmployeeRepository.java
+================================================================================
+
+package com.dma.springboot.repository;
+
+import com.dma.springboot.entity.EmployeeEntity;
+import com.dma.springboot.projection.EmployeeNameView;
+import com.dma.springboot.projection.EmployeeNativeView;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+import java.util.Optional;
+
+@Repository
+public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Integer>, EmployeeCustomRepository {
+
+    Optional<EmployeeEntity> findByFirstNameContaining(String firstName);
+
+    @Query("Select e from EmployeeEntity e where e.firstName = :firstName")
+    Optional<EmployeeEntity> findByQuery(@Param("firstName") String firstName);
+
+    @Query(value = "SELECT e.* FROM employee e WHERE e.first_name = :firstName", nativeQuery = true)
+    Optional<EmployeeEntity> findByNativeQuery(@Param("firstName") String firstName);
+
+    @Query("Select e from EmployeeEntity e where e.firstName = ?1")
+    Optional<EmployeeEntity> findByQueryParm(String firstName);
+
+    List<EmployeeNameView> findBySalaryGreaterThan(Integer salary);
+
+    @Query(value = "Select " +
+            "e.id as id, " +
+            "e.first_name || ' ' || e.last_name as full_name " +
+            " from employee e where e.salary > :salary", nativeQuery = true)
+    List<EmployeeNativeView> findBySalaryGreaterThanNative(@Param("salary") Integer salary);
+
+    Optional<EmployeeEntity> findByFirstNameAndLastName(String firstName, String lastName);
+}
+
+================================================================================
+ФАЙЛ 26: src/main/java/com/dma/springboot/repository/EmployeeRepositoryImpl.java
+================================================================================
+
+package com.dma.springboot.repository;
+
+import com.dma.springboot.dto.EmployeeFilter;
+import com.dma.springboot.entity.EmployeeEntity;
+import com.dma.springboot.entity.QEmployeeEntity;
+import com.querydsl.jpa.impl.JPAQuery;
+import lombok.RequiredArgsConstructor;
+
+import javax.persistence.EntityManager;
+import java.util.List;
+
+import static com.dma.springboot.entity.QEmployeeEntity.employeeEntity;
+
+@RequiredArgsConstructor
+public class EmployeeRepositoryImpl implements EmployeeCustomRepository {
+
+    private final EntityManager entityManager;
+
+    @Override
+    public List<EmployeeEntity> findCustomQuery() {
+
+        return List.of();
+    }
+
+    @Override
+    public List<EmployeeEntity> findByFilter(EmployeeFilter filter) {
+
+        return new JPAQuery<EmployeeEntity>(entityManager)
+                .select(QEmployeeEntity.employeeEntity)
+                .from(QEmployeeEntity.employeeEntity)
+                .where(QEmployeeEntity.employeeEntity.firstName.containsIgnoreCase(filter.getFirstName()))
+                .fetch();
+    }
+}
+
+================================================================================
+ФАЙЛ 27: src/main/java/com/dma/springboot/config/DataDirectoryConfig.java
+================================================================================
+
+package com.dma.springboot.config;
+
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Configuration;
+
+import javax.annotation.PostConstruct;
+import java.io.File;
+
+@Slf4j
+@Configuration
+public class DataDirectoryConfig {
+
+    @PostConstruct
+    public void init() {
+        // Создаем папку для данных, если она не существует
+        File dataDir = new File("./data");
+        if (!dataDir.exists()) {
+            boolean created = dataDir.mkdirs();
+            if (created) {
+                log.info("Created data directory: {}", dataDir.getAbsolutePath());
+            }
+        }
+
+        // Также создаем папку для тестовых данных
+        File testDataDir = new File("./target");
+        if (!testDataDir.exists()) {
+            testDataDir.mkdirs();
+        }
+    }
+}
+
+================================================================================
+ФАЙЛ 28: src/main/java/com/dma/springboot/config/DatabaseConfig.java
+================================================================================
+
+package com.dma.springboot.config;
+
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
+import org.springframework.jdbc.datasource.DriverManagerDataSource;
+
+import javax.sql.DataSource;
+
+@Slf4j
+@Configuration
+public class DatabaseConfig {
+
+//    @Profile({"dev", "test"})
+//    @Bean
+//    public DataSource h2DataSource() {
+//        log.info("Configuring H2 DataSource for dev/test profiles");
+//        DriverManagerDataSource dataSource = new DriverManagerDataSource();
+//        dataSource.setDriverClassName("org.h2.Driver");
+//        dataSource.setUrl("jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE");
+//        dataSource.setUsername("sa");
+//        dataSource.setPassword("");
+//        return dataSource;
+//    }
+//
+//    @Profile("prod")
+//    @Bean
+//    public DataSource postgresqlDataSource() {
+//        log.info("Configuring PostgreSQL DataSource for prod profile");
+//        DriverManagerDataSource dataSource = new DriverManagerDataSource();
+//        dataSource.setDriverClassName("org.postgresql.Driver");
+//        dataSource.setUrl("jdbc:postgresql://localhost:5433/task_manager_alpine");
+//        dataSource.setUsername("alpine_user");
+//        dataSource.setPassword("alpine_user_pass");
+//        return dataSource;
+//    }
+}
+
+================================================================================
+ФАЙЛ 29: src/main/java/com/dma/springboot/config/ApplicationConfiguration.java
+================================================================================
+
+package com.dma.springboot.config;
+
+import com.dma.springboot.conditional.FirstConditional;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Conditional;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
+
+import javax.annotation.PostConstruct;
+
+@Conditional(FirstConditional.class)
+@Profile({"dev", "test", "prod"}) // Теперь работает для всех профилей
+@Slf4j
+@Configuration
+public class ApplicationConfiguration {
+
+    @PostConstruct
+    public void init(){
+        log.warn("Application configuration initialized");
+    }
+}
