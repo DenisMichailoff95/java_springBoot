@@ -61,6 +61,11 @@
 
         <dependency>
             <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jdbc</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
@@ -299,7 +304,66 @@ class GreetingServiceTest {
 }
 
 ================================================================================
-ФАЙЛ 6: src/test/java/com/dma/springboot/repository/CompanyRepositoryTest.java
+ФАЙЛ 6: src/test/java/com/dma/springboot/repository/JdbcTemplateTest.java
+================================================================================
+
+package com.dma.springboot.repository;
+
+import com.dma.springboot.IntegrationTestBase;
+import com.dma.springboot.entity.CompanyEntity;
+import org.hamcrest.MatcherAssert;
+import org.hamcrest.Matchers;
+import org.hamcrest.collection.IsCollectionWithSize;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcOperations;
+import org.springframework.jdbc.core.RowMapper;
+
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.List;
+
+public class JdbcTemplateTest extends IntegrationTestBase {
+
+    private static final String INSERT_SQL = "insert into company (name) values (?)";
+    private static final String DELETE_RETURNING_SQL = "DELETE FROM company WHERE name = ? RETURNING *";
+
+    @Autowired
+    JdbcOperations jdbcOperations;
+
+    @Test
+    void TestInsert(){
+        int result = jdbcOperations.update(INSERT_SQL, "Microsoft");
+        Assertions.assertEquals(1, result);
+    }
+
+
+    @Test
+    void TestReturning(){
+        String companyName = "Microsoft";
+        jdbcOperations.update(INSERT_SQL, companyName);
+        List<CompanyEntity> result = jdbcOperations.query(
+                DELETE_RETURNING_SQL,
+                new RowMapper<CompanyEntity>(){
+                  @Override
+                    public CompanyEntity mapRow(ResultSet rs, int rowNum)
+                      throws SQLException {
+                          return CompanyEntity.builder()
+                                  .id(rs.getInt("id"))
+                                  .name(rs.getString("name"))
+                                  .build();
+                      };
+                },
+                companyName);
+        MatcherAssert.assertThat(result, IsCollectionWithSize.hasSize(1));
+//        MatcherAssert.assertThat(result, Matchers.hasSize(1));
+    }
+
+}
+
+================================================================================
+ФАЙЛ 7: src/test/java/com/dma/springboot/repository/CompanyRepositoryTest.java
 ================================================================================
 
 package com.dma.springboot.repository;
@@ -370,7 +434,7 @@ class CompanyRepositoryTest {
 }
 
 ================================================================================
-ФАЙЛ 7: src/test/java/com/dma/springboot/repository/EmployeeRepositoryTest.java
+ФАЙЛ 8: src/test/java/com/dma/springboot/repository/EmployeeRepositoryTest.java
 ================================================================================
 
 package com.dma.springboot.repository;
@@ -389,8 +453,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import static com.dma.springboot.entity.QEmployeeEntity.employeeEntity;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -613,31 +680,54 @@ class EmployeeRepositoryTest extends IntegrationTestBase {
 
     @Test
     void testQPredicates() {
-        // Given
+        // Given - используем реальные значения из БД
         EmployeeFilter filter = EmployeeFilter.builder()
                 .firstName("ivan")
+                .salary(50)  // Ищем зарплату >= 50 (в БД salary = 100)
                 .build();
 
-        // When - используем QueryDSL Predicate
+        log.info("=".repeat(60));
+        log.info("🔍 Поиск по фильтру:");
+        log.info("   firstName: '{}' (поиск по вхождению, без учета регистра)", filter.getFirstName());
+        log.info("   salary >= {}", filter.getSalary());
+        log.info("=".repeat(60));
+
+        // When
         Predicate predicate = QPredicate.builder()
                 .add(filter.getFirstName(), employeeEntity.firstName::containsIgnoreCase)
-                .add(filter.getLastName(), employeeEntity.lastName::containsIgnoreCase)
-                .add(filter.getSalary(), s -> employeeEntity.salary.goe(100))
+                .add(filter.getSalary(), employeeEntity.salary::goe)
                 .buildAnd();
 
         Iterable<EmployeeEntity> result = employeeRepository.findAll(predicate);
-        List<EmployeeEntity> employees = (List<EmployeeEntity>) result;
+        List<EmployeeEntity> employees = new ArrayList<>();
+        result.forEach(employees::add);
 
         // Then
         assertThat(employees)
-                .as("Поиск по фильтру: %s", filter)
+                .as("Должен найти сотрудника Ivan с зарплатой >= %d", filter.getSalary())
                 .isNotEmpty();
 
-        // Логируем результаты
-        log.info("Найдено сотрудников: {}", employees.size());
-        employees.forEach(emp ->
-                log.info("  → {}", formatEmployee(emp))
-        );
+        log.info("✅ Найдено сотрудников: {}", employees.size());
+
+        employees.forEach(emp -> {
+            log.info("   → id={}: {} {}, зарплата={}, компания={}",
+                    emp.getId(),
+                    emp.getFirstName(),
+                    emp.getLastName(),
+                    emp.getSalary(),
+                    emp.getCompany() != null ? emp.getCompany().getName() : "—");
+
+            // Проверяем каждого сотрудника
+            assertThat(emp.getFirstName())
+                    .as("Имя должно содержать 'ivan' (без учета регистра)")
+                    .containsIgnoringCase("ivan");
+
+            assertThat(emp.getSalary())
+                    .as("Зарплата должна быть >= %d", filter.getSalary())
+                    .isGreaterThanOrEqualTo(filter.getSalary());
+        });
+
+        log.info("=".repeat(60));
     }
 
     private String formatEmployee(EmployeeEntity emp) {
@@ -652,7 +742,7 @@ class EmployeeRepositoryTest extends IntegrationTestBase {
 }
 
 ================================================================================
-ФАЙЛ 8: src/main/resources/application-dev-file.properties
+ФАЙЛ 9: src/main/resources/application-dev-file.properties
 ================================================================================
 
 # H2 File Database
@@ -680,7 +770,7 @@ spring.sql.init.data-locations=classpath:sql/data.sql
 app.service.greeting.message=Hello from Dev File H2
 
 ================================================================================
-ФАЙЛ 9: src/main/resources/application-dev.properties
+ФАЙЛ 10: src/main/resources/application-dev.properties
 ================================================================================
 
 # Server Configuration
@@ -706,7 +796,7 @@ spring.jpa.properties.hibernate.format_sql=true
 app.service.greeting.message=Hello from Dev H2
 
 ================================================================================
-ФАЙЛ 10: src/main/resources/application.properties
+ФАЙЛ 11: src/main/resources/application.properties
 ================================================================================
 
 # Default profile
@@ -719,7 +809,7 @@ logging.level.com.dma.springboot=DEBUG
 logging.pattern.console=%d{yyyy-MM-dd HH:mm:ss} - %msg%n
 
 ================================================================================
-ФАЙЛ 11: src/main/resources/application-prod.properties
+ФАЙЛ 12: src/main/resources/application-prod.properties
 ================================================================================
 
 # Server Configuration
@@ -758,7 +848,7 @@ logging.file.max-size=10MB
 logging.file.max-history=10
 
 ================================================================================
-ФАЙЛ 12: src/main/resources/sql/init.sql
+ФАЙЛ 13: src/main/resources/sql/init.sql
 ================================================================================
 
 CREATE TABLE IF NOT EXISTS company(
@@ -776,7 +866,7 @@ CREATE TABLE IF NOT EXISTS employee(
     );
 
 ================================================================================
-ФАЙЛ 13: src/main/resources/sql/data.sql
+ФАЙЛ 14: src/main/resources/sql/data.sql
 ================================================================================
 
 DELETE FROM employee;
@@ -792,7 +882,7 @@ INSERT INTO employee(id, first_name, last_name, birth_date, salary, company_id)
 VALUES (2, 'Petr', 'Petrov', '1991-02-02', 120000, 2);
 
 ================================================================================
-ФАЙЛ 14: src/main/java/com/dma/springboot/SpringBootTestApplication.java
+ФАЙЛ 15: src/main/java/com/dma/springboot/SpringBootTestApplication.java
 ================================================================================
 
 package com.dma.springboot;
@@ -810,12 +900,13 @@ public class SpringBootTestApplication {
 }
 
 ================================================================================
-ФАЙЛ 15: src/main/java/com/dma/springboot/util/QPredicate.java
+ФАЙЛ 16: src/main/java/com/dma/springboot/util/QPredicate.java
 ================================================================================
 
 package com.dma.springboot.util;
 
 import com.querydsl.core.types.ExpressionUtils;
+import com.querydsl.core.types.Predicate;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
@@ -823,38 +914,39 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 
-import com.querydsl.core.types.Predicate;
-import org.springframework.core.NestedExceptionUtils;
-
-
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class QPredicate {
 
     private List<Predicate> predicates = new ArrayList<>();
 
-    public <T> QPredicate add(T object, Function<T, Predicate> function){
-        if (object != null){
-          predicates.add(function.apply(object));
+    public <T> QPredicate add(T object, Function<T, Predicate> function) {
+        if (object != null) {
+            predicates.add(function.apply(object));
         }
         return this;
-    };
-
-    public Predicate buildAnd(Predicate... predicates){
-        return ExpressionUtils.allOf(predicates);
     }
 
-    public Predicate buildOr(Predicate... predicates){
-        return ExpressionUtils.anyOf(predicates);
+    // Исправлено: используем накопленные предикаты
+    public Predicate buildAnd() {
+        return predicates.stream()
+                .reduce(ExpressionUtils::allOf)
+                .orElse(null);
     }
 
+    // Исправлено: используем накопленные предикаты
+    public Predicate buildOr() {
+        return predicates.stream()
+                .reduce(ExpressionUtils::anyOf)
+                .orElse(null);
+    }
 
-    public static QPredicate builder(){
+    public static QPredicate builder() {
         return new QPredicate();
     }
 }
 
 ================================================================================
-ФАЙЛ 16: src/main/java/com/dma/springboot/dto/EmployeeFilter.java
+ФАЙЛ 17: src/main/java/com/dma/springboot/dto/EmployeeFilter.java
 ================================================================================
 
 package com.dma.springboot.dto;
@@ -877,7 +969,7 @@ public class EmployeeFilter {
 }
 
 ================================================================================
-ФАЙЛ 17: src/main/java/com/dma/springboot/conditional/FirstConditional.java
+ФАЙЛ 18: src/main/java/com/dma/springboot/conditional/FirstConditional.java
 ================================================================================
 
 package com.dma.springboot.conditional;
@@ -894,7 +986,7 @@ public class FirstConditional implements Condition {
 }
 
 ================================================================================
-ФАЙЛ 18: src/main/java/com/dma/springboot/conditional/service/GreetingService.java
+ФАЙЛ 19: src/main/java/com/dma/springboot/conditional/service/GreetingService.java
 ================================================================================
 
 package com.dma.springboot.conditional.service;
@@ -915,7 +1007,7 @@ public class GreetingService {
 }
 
 ================================================================================
-ФАЙЛ 19: src/main/java/com/dma/springboot/entity/EmployeeEntity.java
+ФАЙЛ 20: src/main/java/com/dma/springboot/entity/EmployeeEntity.java
 ================================================================================
 
 package com.dma.springboot.entity;
@@ -956,7 +1048,7 @@ public class EmployeeEntity {
 }
 
 ================================================================================
-ФАЙЛ 20: src/main/java/com/dma/springboot/entity/CompanyEntity.java
+ФАЙЛ 21: src/main/java/com/dma/springboot/entity/CompanyEntity.java
 ================================================================================
 
 package com.dma.springboot.entity;
@@ -985,7 +1077,7 @@ public class CompanyEntity {
 }
 
 ================================================================================
-ФАЙЛ 21: src/main/java/com/dma/springboot/projection/EmployeeNameView.java
+ФАЙЛ 22: src/main/java/com/dma/springboot/projection/EmployeeNameView.java
 ================================================================================
 
 package com.dma.springboot.projection;
@@ -1017,7 +1109,7 @@ public interface EmployeeNameView {
 }
 
 ================================================================================
-ФАЙЛ 22: src/main/java/com/dma/springboot/projection/EmployeeNativeView.java
+ФАЙЛ 23: src/main/java/com/dma/springboot/projection/EmployeeNativeView.java
 ================================================================================
 
 package com.dma.springboot.projection;
@@ -1035,7 +1127,7 @@ public interface EmployeeNativeView {
 }
 
 ================================================================================
-ФАЙЛ 23: src/main/java/com/dma/springboot/repository/CompanyRepository.java
+ФАЙЛ 24: src/main/java/com/dma/springboot/repository/CompanyRepository.java
 ================================================================================
 
 package com.dma.springboot.repository;
@@ -1050,7 +1142,7 @@ public interface CompanyRepository extends JpaRepository<CompanyEntity, Integer>
 }
 
 ================================================================================
-ФАЙЛ 24: src/main/java/com/dma/springboot/repository/EmployeeCustomRepository.java
+ФАЙЛ 25: src/main/java/com/dma/springboot/repository/EmployeeCustomRepository.java
 ================================================================================
 
 package com.dma.springboot.repository;
@@ -1069,7 +1161,7 @@ public interface EmployeeCustomRepository {
 }
 
 ================================================================================
-ФАЙЛ 25: src/main/java/com/dma/springboot/repository/EmployeeRepository.java
+ФАЙЛ 26: src/main/java/com/dma/springboot/repository/EmployeeRepository.java
 ================================================================================
 
 package com.dma.springboot.repository;
@@ -1079,6 +1171,7 @@ import com.dma.springboot.projection.EmployeeNameView;
 import com.dma.springboot.projection.EmployeeNativeView;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.querydsl.QuerydslPredicateExecutor;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
@@ -1086,7 +1179,10 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Integer>, EmployeeCustomRepository {
+public interface EmployeeRepository extends
+        JpaRepository<EmployeeEntity, Integer>,
+        EmployeeCustomRepository,
+        QuerydslPredicateExecutor<EmployeeEntity> {
 
     Optional<EmployeeEntity> findByFirstNameContaining(String firstName);
 
@@ -1111,7 +1207,7 @@ public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Intege
 }
 
 ================================================================================
-ФАЙЛ 26: src/main/java/com/dma/springboot/repository/EmployeeRepositoryImpl.java
+ФАЙЛ 27: src/main/java/com/dma/springboot/repository/EmployeeRepositoryImpl.java
 ================================================================================
 
 package com.dma.springboot.repository;
@@ -1150,7 +1246,7 @@ public class EmployeeRepositoryImpl implements EmployeeCustomRepository {
 }
 
 ================================================================================
-ФАЙЛ 27: src/main/java/com/dma/springboot/config/DataDirectoryConfig.java
+ФАЙЛ 28: src/main/java/com/dma/springboot/config/DataDirectoryConfig.java
 ================================================================================
 
 package com.dma.springboot.config;
@@ -1185,7 +1281,7 @@ public class DataDirectoryConfig {
 }
 
 ================================================================================
-ФАЙЛ 28: src/main/java/com/dma/springboot/config/DatabaseConfig.java
+ФАЙЛ 29: src/main/java/com/dma/springboot/config/DatabaseConfig.java
 ================================================================================
 
 package com.dma.springboot.config;
@@ -1228,7 +1324,7 @@ public class DatabaseConfig {
 }
 
 ================================================================================
-ФАЙЛ 29: src/main/java/com/dma/springboot/config/ApplicationConfiguration.java
+ФАЙЛ 30: src/main/java/com/dma/springboot/config/ApplicationConfiguration.java
 ================================================================================
 
 package com.dma.springboot.config;
