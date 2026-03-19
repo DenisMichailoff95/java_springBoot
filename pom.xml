@@ -103,6 +103,13 @@
             <version>${querydsl.version}</version>
             <scope>provided</scope>
         </dependency>
+
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
+            <version>9.22.3</version> <!-- Совместимая версия для Spring Boot 2.7 -->
+        </dependency>
+
     </dependencies>
 
     <build>
@@ -197,6 +204,13 @@
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.flywaydb</groupId>
+                <artifactId>flyway-maven-plugin</artifactId>
+                <version>9.22.3</version> <!-- Синхронизируйте версию с зависимостью -->
+                <!-- Конфигурацию лучше вынести в application.properties -->
             </plugin>
         </plugins>
     </build>

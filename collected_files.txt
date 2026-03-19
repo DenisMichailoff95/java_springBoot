@@ -108,6 +108,13 @@
             <version>${querydsl.version}</version>
             <scope>provided</scope>
         </dependency>
+
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
+            <version>9.22.3</version> <!-- Совместимая версия для Spring Boot 2.7 -->
+        </dependency>
+
     </dependencies>
 
     <build>
@@ -203,6 +210,13 @@
                     </execution>
                 </executions>
             </plugin>
+
+            <plugin>
+                <groupId>org.flywaydb</groupId>
+                <artifactId>flyway-maven-plugin</artifactId>
+                <version>9.22.3</version> <!-- Синхронизируйте версию с зависимостью -->
+                <!-- Конфигурацию лучше вынести в application.properties -->
+            </plugin>
         </plugins>
     </build>
 </project>
@@ -222,6 +236,11 @@ spring.jpa.database-platform=org.hibernate.dialect.H2Dialect
 spring.jpa.hibernate.ddl-auto=create-drop
 spring.jpa.show-sql=false
 spring.jpa.properties.hibernate.format_sql=false
+
+# Flyway
+spring.flyway.enabled=true
+spring.flyway.baseline-on-migrate=true
+spring.flyway.locations=classpath:db/migration
 
 # Application Properties
 app.service.greeting.message=Hello
@@ -761,6 +780,11 @@ spring.jpa.hibernate.ddl-auto=update
 spring.jpa.show-sql=true
 spring.jpa.properties.hibernate.format_sql=true
 
+# Flyway
+spring.flyway.enabled=true
+spring.flyway.baseline-on-migrate=true
+spring.flyway.locations=classpath:db/migration
+
 # SQL Initialization - ?????? ???? ????????
 spring.sql.init.mode=always
 spring.sql.init.schema-locations=classpath:sql/init.sql
@@ -791,6 +815,13 @@ spring.jpa.database-platform=org.hibernate.dialect.H2Dialect
 spring.jpa.hibernate.ddl-auto=create-drop
 spring.jpa.show-sql=true
 spring.jpa.properties.hibernate.format_sql=true
+
+# Flyway
+# V(version)__description.sql
+spring.flyway.enabled=true
+spring.flyway.baseline-on-migrate=true
+spring.flyway.locations=classpath:db/migration
+spring.flyway.schemas = test_shema
 
 # Application Properties
 app.service.greeting.message=Hello from Dev H2
@@ -827,6 +858,11 @@ spring.jpa.hibernate.ddl-auto=none
 spring.jpa.show-sql=false
 spring.jpa.properties.hibernate.format_sql=false
 
+# Flyway
+spring.flyway.enabled=true
+spring.flyway.baseline-on-migrate=true
+spring.flyway.locations=classpath:db/migration
+
 # Application Properties
 app.service.greeting.message=Hello from Prod PostgreSQL
 
@@ -848,7 +884,7 @@ logging.file.max-size=10MB
 logging.file.max-history=10
 
 ================================================================================
-ФАЙЛ 13: src/main/resources/sql/init.sql
+ФАЙЛ 13: src/main/resources/db.migration/V1__init.sql
 ================================================================================
 
 CREATE TABLE IF NOT EXISTS company(
@@ -866,7 +902,25 @@ CREATE TABLE IF NOT EXISTS employee(
     );
 
 ================================================================================
-ФАЙЛ 14: src/main/resources/sql/data.sql
+ФАЙЛ 14: src/main/resources/sql/init.sql
+================================================================================
+
+CREATE TABLE IF NOT EXISTS company(
+                                      id SERIAL PRIMARY KEY,
+                                      name VARCHAR(128) NOT NULL UNIQUE
+    );
+
+CREATE TABLE IF NOT EXISTS employee(
+                                       id SERIAL PRIMARY KEY,
+                                       first_name VARCHAR(128) NOT NULL,
+    last_name VARCHAR(128) NOT NULL,
+    birth_date DATE,
+    salary INTEGER NOT NULL,
+    company_id INTEGER REFERENCES company(id)
+    );
+
+================================================================================
+ФАЙЛ 15: src/main/resources/sql/data.sql
 ================================================================================
 
 DELETE FROM employee;
@@ -882,7 +936,7 @@ INSERT INTO employee(id, first_name, last_name, birth_date, salary, company_id)
 VALUES (2, 'Petr', 'Petrov', '1991-02-02', 120000, 2);
 
 ================================================================================
-ФАЙЛ 15: src/main/java/com/dma/springboot/SpringBootTestApplication.java
+ФАЙЛ 16: src/main/java/com/dma/springboot/SpringBootTestApplication.java
 ================================================================================
 
 package com.dma.springboot;
@@ -900,7 +954,7 @@ public class SpringBootTestApplication {
 }
 
 ================================================================================
-ФАЙЛ 16: src/main/java/com/dma/springboot/util/QPredicate.java
+ФАЙЛ 17: src/main/java/com/dma/springboot/util/QPredicate.java
 ================================================================================
 
 package com.dma.springboot.util;
@@ -946,7 +1000,7 @@ public class QPredicate {
 }
 
 ================================================================================
-ФАЙЛ 17: src/main/java/com/dma/springboot/dto/EmployeeFilter.java
+ФАЙЛ 18: src/main/java/com/dma/springboot/dto/EmployeeFilter.java
 ================================================================================
 
 package com.dma.springboot.dto;
@@ -969,7 +1023,7 @@ public class EmployeeFilter {
 }
 
 ================================================================================
-ФАЙЛ 18: src/main/java/com/dma/springboot/conditional/FirstConditional.java
+ФАЙЛ 19: src/main/java/com/dma/springboot/conditional/FirstConditional.java
 ================================================================================
 
 package com.dma.springboot.conditional;
@@ -986,7 +1040,7 @@ public class FirstConditional implements Condition {
 }
 
 ================================================================================
-ФАЙЛ 19: src/main/java/com/dma/springboot/conditional/service/GreetingService.java
+ФАЙЛ 20: src/main/java/com/dma/springboot/conditional/service/GreetingService.java
 ================================================================================
 
 package com.dma.springboot.conditional.service;
@@ -1007,7 +1061,7 @@ public class GreetingService {
 }
 
 ================================================================================
-ФАЙЛ 20: src/main/java/com/dma/springboot/entity/EmployeeEntity.java
+ФАЙЛ 21: src/main/java/com/dma/springboot/entity/EmployeeEntity.java
 ================================================================================
 
 package com.dma.springboot.entity;
@@ -1048,7 +1102,7 @@ public class EmployeeEntity {
 }
 
 ================================================================================
-ФАЙЛ 21: src/main/java/com/dma/springboot/entity/CompanyEntity.java
+ФАЙЛ 22: src/main/java/com/dma/springboot/entity/CompanyEntity.java
 ================================================================================
 
 package com.dma.springboot.entity;
@@ -1077,7 +1131,7 @@ public class CompanyEntity {
 }
 
 ================================================================================
-ФАЙЛ 22: src/main/java/com/dma/springboot/projection/EmployeeNameView.java
+ФАЙЛ 23: src/main/java/com/dma/springboot/projection/EmployeeNameView.java
 ================================================================================
 
 package com.dma.springboot.projection;
@@ -1109,7 +1163,7 @@ public interface EmployeeNameView {
 }
 
 ================================================================================
-ФАЙЛ 23: src/main/java/com/dma/springboot/projection/EmployeeNativeView.java
+ФАЙЛ 24: src/main/java/com/dma/springboot/projection/EmployeeNativeView.java
 ================================================================================
 
 package com.dma.springboot.projection;
@@ -1127,7 +1181,7 @@ public interface EmployeeNativeView {
 }
 
 ================================================================================
-ФАЙЛ 24: src/main/java/com/dma/springboot/repository/CompanyRepository.java
+ФАЙЛ 25: src/main/java/com/dma/springboot/repository/CompanyRepository.java
 ================================================================================
 
 package com.dma.springboot.repository;
@@ -1142,7 +1196,7 @@ public interface CompanyRepository extends JpaRepository<CompanyEntity, Integer>
 }
 
 ================================================================================
-ФАЙЛ 25: src/main/java/com/dma/springboot/repository/EmployeeCustomRepository.java
+ФАЙЛ 26: src/main/java/com/dma/springboot/repository/EmployeeCustomRepository.java
 ================================================================================
 
 package com.dma.springboot.repository;
@@ -1161,7 +1215,7 @@ public interface EmployeeCustomRepository {
 }
 
 ================================================================================
-ФАЙЛ 26: src/main/java/com/dma/springboot/repository/EmployeeRepository.java
+ФАЙЛ 27: src/main/java/com/dma/springboot/repository/EmployeeRepository.java
 ================================================================================
 
 package com.dma.springboot.repository;
@@ -1207,7 +1261,7 @@ public interface EmployeeRepository extends
 }
 
 ================================================================================
-ФАЙЛ 27: src/main/java/com/dma/springboot/repository/EmployeeRepositoryImpl.java
+ФАЙЛ 28: src/main/java/com/dma/springboot/repository/EmployeeRepositoryImpl.java
 ================================================================================
 
 package com.dma.springboot.repository;
@@ -1246,7 +1300,7 @@ public class EmployeeRepositoryImpl implements EmployeeCustomRepository {
 }
 
 ================================================================================
-ФАЙЛ 28: src/main/java/com/dma/springboot/config/DataDirectoryConfig.java
+ФАЙЛ 29: src/main/java/com/dma/springboot/config/DataDirectoryConfig.java
 ================================================================================
 
 package com.dma.springboot.config;
@@ -1281,7 +1335,7 @@ public class DataDirectoryConfig {
 }
 
 ================================================================================
-ФАЙЛ 29: src/main/java/com/dma/springboot/config/DatabaseConfig.java
+ФАЙЛ 30: src/main/java/com/dma/springboot/config/DatabaseConfig.java
 ================================================================================
 
 package com.dma.springboot.config;
@@ -1324,7 +1378,7 @@ public class DatabaseConfig {
 }
 
 ================================================================================
-ФАЙЛ 30: src/main/java/com/dma/springboot/config/ApplicationConfiguration.java
+ФАЙЛ 31: src/main/java/com/dma/springboot/config/ApplicationConfiguration.java
 ================================================================================
 
 package com.dma.springboot.config;
